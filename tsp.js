@@ -1,16 +1,45 @@
+// hardcoded
 var height = 500;
 var width = 960;
 var N = 100;
+var transitionDuration = 100;
 
 var svg = d3.select("#svg-container").append("svg")
 	.attr("width", width)
 	.attr("height", height);
 
+var toClosedLine = d3.svg.line()
+    .x(function(d) { return d.x; })
+    .y(function(d) { return d.y; })
+    .interpolate("linear-closed");
+
+var toOpenLine = d3.svg.line()
+    .x(function(d) { return d.x; })
+    .y(function(d) { return d.y; })
+    .interpolate("linear");
+
 var points = new Array(N);
-for (var i = 0; i < N; i++) {
-	points[i] = {x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height)};
-}
 var path = [];
+
+function generatePoints() {
+	for (var i = 0; i < N; i++) {
+		points[i] = {x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height)};
+	}
+}
+
+function drawPoints() { 
+	svg.selectAll("circle")
+	.data(points)
+	.enter()
+	.append("circle")
+	.attr("cx", function(d) {
+		return d.x;
+	})
+	.attr("cy", function(d) {
+		return d.y;
+	})
+	.attr("r", 2);
+}
 
 function sqDistance(p1, p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
@@ -31,16 +60,28 @@ function generateDistanceMatrix(points) {
 }
 
 function distance(p1, p2) {
-	return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+	 return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+	//return distances[Math.min(p1, p2)][Math.max(p1, p2)];
+}
+
+function distanceEdge(edge) {
+	//return distances(edge[0], edge[1]);
 }
 
 function pathDistance() {
-	d = distance(path[0], path[path.length - 1]);
+	console.log("distancE!!!");
+	var d = distance(path[0], path[path.length - 1]);
 	for (var i = 1; i < path.length; i++) {
 		d += distance(path[i - 1], path[i]);
 	}
 	console.log("The distance is: " + d);
 	return d;
+	// d = distance(points[path[0]], points[path[path.length - 1]]);
+	// for (var i = 1; i < path.length; i++) {
+	// 	d += distance(points[path[i - 1]], points[path[i]]);
+	// }
+	// console.log("The distance is: " + d);
+	// return d;
 }
 
 function drawLine(p1, p2) {
@@ -58,55 +99,145 @@ function drawLine(p1, p2) {
 		.attr("stroke", "black");
 }
 
-function animateLines() {
+function animateLines(isClosed) {
+	if (isClosed) {
+		var toLine = toClosedLine;
+	} else {
+		var toLine = toOpenLine;
+	}
 	clearLines();
 
-	var lines = svg.selectAll("line")
-		.data(path, function(d, i) {
-			if (i == path.length - 1) {
-				return edgeToString(d, path[0]);
-			}
-			return edgeToString(d, path[i + 1]);
-		});
+	svg.selectAll("path").remove();
+	var lines = svg
+		//.selectAll("path")
+		//.data(path)
+		.append("path")
+		.attr("d", toLine(path))
+		.attr("fill", "none")
+		.attr("stroke", "black")
+		.attr("stroke-width", 2);
+		//.attr("stroke-dasharray", pathDistance() + " " + pathDistance())
+      	//.attr("stroke-dashoffset", pathDistance())
+      	//.transition()
+      	//.duration(1000)
+      	//.ease("linear")
+      	//.attr("stroke-dashoffset", 0);
+    console.log("hello");
+
+	//lines.transition()
+	//	.attr("d", toLine(path));
+
+		// .data(path, function(d, i) {
+		// 	if (i == path.length - 1) {
+		// 		return edgeToString(d, path[0]);
+		// 	}
+		// 	return edgeToString(d, path[i + 1]);
+		// });
 
 	// lines.exit()
 	// 	.attr("stroke", "red")
 	// 	.transition(1000)
 	// 	.remove();
 
-	lines.enter()
-		.append("line")
-		.attr("stroke-width", 2)
-		.attr("x1", function(d) {
-			return d.x;
-		})
-		.attr("y1", function(d) {
-			return d.y;
-		})
-		.attr("x2", function(d, i) {
-			return d.x;
-		})
-		.attr("y2", function(d, i) {
-			return d.y;
-		})
-		.attr("stroke", "red")
+	// lines.enter()
+	// 	.append("line")
+	// 	.attr("stroke-width", 2)
+	// 	.attr("x1", function(d) {
+	// 		return d.x;
+	// 	})
+	// 	.attr("y1", function(d) {
+	// 		return d.y;
+	// 	})
+	// 	.attr("x2", function(d, i) {
+	// 		return d.x;
+	// 	})
+	// 	.attr("y2", function(d, i) {
+	// 		return d.y;
+	// 	})
+	// 	.attr("stroke", "red")
+	// 	.transition()
+	// 	.delay(function(d, i) {
+	// 		return i * 10;
+	// 	})
+	// 	.attr("stroke", "black")
+	// 	.attr("x2", function(d, i) {
+	// 		if (i == path.length - 1) {
+	// 			return path[0].x;
+	// 		}
+	// 		return path[i + 1].x;
+	// 	})
+	// 	.attr("y2", function(d, i) {
+	// 		if (i == path.length - 1) {
+	// 			return path[0].y;
+	// 		}
+	// 		return path[i + 1].y;
+	// 	});
+}
+
+function updatePath(i, isClosed) {
+	if (isClosed) {
+		var toLine = toClosedLine;
+	} else {
+		var toLine = toOpenLine;
+	}
+	svg.selectAll("path")
 		.transition()
-		.delay(function(d, i) {
-			return i * 10;
-		})
-		.attr("stroke", "black")
-		.attr("x2", function(d, i) {
-			if (i == path.length - 1) {
-				return path[0].x;
-			}
-			return path[i + 1].x;
-		})
-		.attr("y2", function(d, i) {
-			if (i == path.length - 1) {
-				return path[0].y;
-			}
-			return path[i + 1].y;
-		});
+		.ease("linear")
+//		.duration(duration)
+		.delay(transitionDuration * (i + 1))
+		.attr("d", toLine(path));
+}
+
+function updatePathNoInterpolate(i) {
+	svg.selectAll("path")
+		.transition()
+		.ease("linear")
+		.duration(0)
+		.delay(transitionDuration * (i + 1))
+		.attr("d", toClosedLine(path));
+}
+
+function animateEdge(i, before, insert, after) {
+	console.log(before);
+	console.log(insert);
+	// inserting into open circuit e.g. nearest neighbor
+	var lineBeforeInsertion = svg.append("line")
+			.attr("x1", before.x)
+			.attr("y1", before.y)
+			.attr("stroke-width", 3)
+			.attr("stroke", "red");
+
+
+	if (after != null) {
+		var averageX = (before.x + after.x) / 2;
+		var averageY = (before.y + after.y) / 2;
+		lineBeforeInsertion
+			.attr("x2", averageX)
+			.attr("y2", averageY);
+
+		var lineAfterInsertion = svg.append("line")
+			.attr("x1", after.x)
+			.attr("y1", after.y)
+			.attr("x2", averageX / 2)
+			.attr("y2", averageY / 2)
+			//.attr("stroke", "red")
+			.transition()
+			.delay(i * transitionDuration)
+			.duration(transitionDuration)
+			.attr("x2", insert.x)
+			.attr("y2", insert.y)
+			.remove()
+	} else {
+		lineBeforeInsertion
+			.attr("x2", before.x)
+			.attr("y2", before.y);
+	}
+	lineBeforeInsertion.transition()
+		.delay(i * transitionDuration)
+		.duration(transitionDuration)
+		.attr("x2", insert.x)
+		.attr("y2", insert.y)
+		.remove();
 }
 
 function updateLines() {
@@ -127,7 +258,7 @@ function updateLines() {
 }
 
 function clearLines() {
-	svg.selectAll("line")
+	svg.selectAll("path")
 		.remove();
 }
 // returns a string of the edge, with points in order by x (breaking ties with y)
@@ -169,26 +300,33 @@ function smallestEdge() {
 
 //in place reordering of points using nearest neighbor heuristic
 function nearestNeighbor() {
-	path = points.slice(0);
-	for (var i = 0; i < path.length - 1; i++) {
+	remainingPoints = points.slice(0);
+	path = [points[0]];
+	animateLines(false);
+	console.log("hi");
+	for (var i = 0; i < points.length - 1; i++) {
 		var nearestSquareDistance = height * height + width * width + 1;
 		var nearestPoint = null;
 		var index = 0;
-		for (var j = i + 1; j < path.length; j++) {
-			currentDistance = sqDistance(path[i], path[j]);
+		for (var j = i + 1; j < points.length; j++) {
+			currentDistance = sqDistance(path[i], remainingPoints[j]);
 			if (currentDistance < nearestSquareDistance) {
-				nearestPoint = path[j];
+				nearestPoint = remainingPoints[j];
 				nearestSquareDistance = currentDistance;
 				index = j;
 				//console.log("nearest point is: " + nearestPoint.x + ", " + nearestPoint.y);
 			}
 		}
-		path = swap(path, i + 1, index);
+		remainingPoints = swap(remainingPoints, i + 1, index);
+		path.push(remainingPoints[i + 1]);
+		animateEdge(i, remainingPoints[i], remainingPoints[i + 1], null);
+		updatePath(i, false);
 	}
+	updatePath(path.length, true)
 	console.log(edgeToString(path[0], path[1]));
 	console.log(edgeToString(path[1], path[0]));
 	//swapEdges();
-	animateLines();
+	//animateLines();
 	pathDistance();
 }
 
@@ -302,11 +440,14 @@ function farthestInsertion() {
 }
 
 function twoOpt() {
-	bestDistance = 0;
-	while (bestDistance != swapEdges()) {
+	var bestDistance = 0;
+	var count = 0
+	while (bestDistance != swapEdges(count * transitionDuration)) {
 		bestDistance = pathDistance();
+		updatePathNoInterpolate(count);
+		count += 1;
 	}
-	animateLines();
+	//updatePath(0, true, 5000);
 }
 
 function twoPoints() {
@@ -317,7 +458,77 @@ function twoPoints() {
 	animateLines();
 }
 
-function swapEdges() {
+function animateEdgeSwap(delay, i, i1, j, j1) {
+	console.log("animate edge swap");
+
+	svg.append("line")
+		.attr("x1", path[i].x)
+		.attr("y1", path[i].y)
+		.attr("x2", path[i1].x)
+		.attr("y2", path[i1].y)
+		.attr("stroke-width", 3)
+		.attr("stroke", "white")
+		.attr("opacity", 0)
+		.transition()
+		.delay(delay)
+		.attr("opacity", 0.5)
+		.transition()
+		.duration(transitionDuration)
+		.attr("opacity", 1)
+		.remove();
+
+	svg.append("line")
+		.attr("x1", path[j].x)
+		.attr("y1", path[j].y)
+		.attr("x2", path[j1].x)
+		.attr("y2", path[j1].y)
+		.attr("stroke-width", 3)
+		.attr("stroke", "white")
+		.attr("opacity", 0)
+		.transition()
+		.delay(delay)
+		.attr("opacity", 0.5)
+		.transition()
+		.duration(transitionDuration)
+		.attr("opacity", 1)
+		.remove();
+
+	svg.append("line")
+		.attr("x1", path[i].x)
+		.attr("y1", path[i].y)
+		.attr("x2", path[i1].x)
+		.attr("y2", path[i1].y)
+		.attr("stroke-width", 4)
+		.attr("stroke", "red")
+		.attr("opacity", 0)
+		.transition()
+		.delay(delay)
+		.attr("opacity", 1)
+		.transition()
+		.duration(transitionDuration)
+		.attr("x2", path[j].x)
+		.attr("y2", path[j].y)
+		.remove();
+
+	svg.append("line")
+		.attr("x1", path[j].x)
+		.attr("y1", path[j].y)
+		.attr("x2", path[j1].x)
+		.attr("y2", path[j1].y)
+		.attr("stroke-width", 4)
+		.attr("stroke", "red")
+		.attr("opacity", 0)
+		.transition()
+		.delay(delay)
+		.attr("opacity", 1)
+		.transition()
+		.duration(transitionDuration)
+		.attr("x1", path[i1].x)
+		.attr("y1", path[i1].y)
+		.remove();
+}
+
+function swapEdges(delay) {
 	console.log("2 opt!");
 	// for (var k = 0; k < path.length - 1; k++) {
 	// 	console.log(edgeToString(path[k], path[k + 1]));
@@ -326,6 +537,7 @@ function swapEdges() {
 	for (var i = 0; i < path.length - 1; i++) { 
 		for (var j = i + 2; j < path.length - 1; j++) {
 			if ((distance(path[i], path[i + 1]) + distance(path[j], path[j + 1])) > (distance(path[i], path[j]) + distance(path[j + 1], path[i + 1]))) {
+				animateEdgeSwap(delay, i, i + 1, j, j + 1);
 				path = path.slice(0, i + 1).concat(path.slice(i + 1, j + 1).reverse().concat(path.slice(j + 1)));
 				//updateLines();
 				//animateLines();
@@ -364,18 +576,8 @@ function swapEdges() {
 // 	}
 // 	return pathDistance();
 // }
-
-svg.selectAll("circle")
-	.data(points)
-	.enter()
-	.append("circle")
-	.attr("cx", function(d) {
-		return d.x;
-	})
-	.attr("cy", function(d) {
-		return d.y;
-	})
-	.attr("r", 2);
+generatePoints();
+drawPoints();
 
 $("#nearest-neighbor").on("click", nearestNeighbor);
 $("#nearest-insertion").on("click", nearestInsertion);
