@@ -1,7 +1,7 @@
 // hardcoded
 var height = 500;
 var width = 960;
-var N = 500;
+var N = 10;
 var transitionDuration = 10000 / N;
 var instantDuration = 20;
 
@@ -11,6 +11,16 @@ var svg = d3.select("#svg-container").append("svg")
 
 var points = new Array(N);
 var path = [];
+
+function checkAnimation() {
+	if ($("#animate").prop("checked")) {
+		transitionDuration = 10000 / N;
+		instantDuration = 20;
+	} else {
+		transitionDuration = 0;
+		instantDuration = 0;
+	}
+}
 
 // returns a function that takes in a data array to create a path
 function toLine(isClosed) {
@@ -336,29 +346,48 @@ function detour(before, insert, after) {
 	return distance(before, insert) + distance(insert, after) - distance(before, after);
 }
 
-function nearFarInsertion(nearest) {
+function nearFarInsertion(farthest) {
 	path = [points[0]];
 	var remainingPoints = points.slice(0);
 	appendPath();
 	for (var i = 1; i < points.length; i++) {
 		var indexInRemaining = 0;
 		var indexInPath = 0;
-		if (nearest) {
-			var bestSquareDistance = height * height + width * width + 1;
-		}
-		var bestSquareDistance = -1;
+		var minimalSquareDistance = height * height + width * width + 1;
+		var maximalSquareDistanceToTour = -1;
 		var bestPoint = null;
-			for (var j = i; j < points.length; j++) {
+		for (var j = i; j < points.length; j++) {
+			if (farthest) {
+				minimalSquareDistance = height * height + width * width + 1;
+			}
 			for (var k = 0; k < path.length; k++) {
 				var currentSquareDistance = sqDistance(path[k], remainingPoints[j]);
-				if ((!nearest && currentSquareDistance > bestSquareDistance) 
-					|| (nearest && currentSquareDistance < bestSquareDistance)) {
-					bestPoint = remainingPoints[j];
-					bestSquareDistance = currentSquareDistance;
-					indexInRemaining = j;
+				console.log(path[k]);
+				console.log(remainingPoints[j]);
+				console.log(currentSquareDistance);
+
+				// find minimal distance from j to a point in the subtour
+				if (currentSquareDistance < minimalSquareDistance) {
+					minimalSquareDistance = currentSquareDistance;
+
+					// for nearest insertion store the closest point
+					if (!farthest) {
+						bestPoint = remainingPoints[j];
+						indexInRemaining = j;
+					}
 				}
 			}
+			// for farthest insertion store the point whose minimal distance to the tour is maximal
+			if (farthest && minimalSquareDistance > maximalSquareDistanceToTour) {
+				if (minimalSquareDistance > maximalSquareDistanceToTour) {
+					maximalSquareDistanceToTour = minimalSquareDistance;
+					bestPoint = remainingPoints[j];
+					indexInRemaining = j;
+				}
+			}	
+
 		}
+		console.log(bestPoint);
 		remainingPoints = swap(remainingPoints, indexInRemaining, i);
 		smallestDetour = Math.sqrt(height * height + width * width) + 1;
 		for (var k = 0; k < path.length - 1; k++) {
@@ -378,6 +407,7 @@ function nearFarInsertion(nearest) {
 
 		updatePath(i, true);
 	}
+	console.log(path.length);
 	pathDistance();
 }
 
@@ -482,20 +512,22 @@ function swapEdges(count) {
 
 generatePoints();
 drawPoints();
+drawIndices();
 
 
 $("#nearest-neighbor").on("click", nearestNeighbor);
 $("#nearest-insertion").on("click", function() {
+//	checkAnimation();
 	console.time("one");
 	nearestInsertion();
 	console.timeEnd("one");
 	 });
 $("#nearest-insertion-two").on("click", function() {
 	console.time("two");
-	nearFarInsertion(true);
+	nearFarInsertion(false);
 	console.timeEnd("two");
 	 });
-$("#farthest-insertion").on("click", function() { return nearFarInsertion(false) });
+$("#farthest-insertion").on("click", function() { return nearFarInsertion(true) });
 $("#in-order").on("click", inOrder);
 $("#2-opt").on("click", twoOpt);
 // $("#2-points").on("click", twoPoints);
@@ -503,3 +535,4 @@ $("#clear").on("click", function() {
 	clearLines();
 	path = []
 });
+$("#animate").on("click", checkAnimation);
