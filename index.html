@@ -2,21 +2,19 @@
 	<title>Travelling Salesman</title>
 
 	<style>
-	.line {
-		stroke-width: 3;
-		stroke: red;
-	}
 	</style>
 </head>
 <body>
 	<button id="2-opt">2-opt</button>
 <!-- 	<button id="2-points">2-points</button> -->
 	<button id="nearest-insertion">Nearest Insertion</button>
+	<button id="nearest-insertion-two">Nearest Insertion Two</button>
 	<button id="farthest-insertion">Farthest Insertion</button>
 	<button id="nearest-neighbor">Nearest Neighbor</button>
 	<button id="in-order">In Order</button>
 	<button id="clear">Clear</button>
 	<div id="svg-container"></div>
+	<h2 id="distance">Distance: 0</h2>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 	<script src="tsp.js" charset="utf-8"></script>

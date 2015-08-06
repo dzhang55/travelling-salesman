@@ -1,30 +1,38 @@
 // hardcoded
 var height = 500;
 var width = 960;
-var N = 100;
-var transitionDuration = 100;
+var N = 500;
+var transitionDuration = 10000 / N;
+var instantDuration = 20;
 
 var svg = d3.select("#svg-container").append("svg")
 	.attr("width", width)
 	.attr("height", height);
 
-var toClosedLine = d3.svg.line()
-    .x(function(d) { return d.x; })
-    .y(function(d) { return d.y; })
-    .interpolate("linear-closed");
-
-var toOpenLine = d3.svg.line()
-    .x(function(d) { return d.x; })
-    .y(function(d) { return d.y; })
-    .interpolate("linear");
-
 var points = new Array(N);
 var path = [];
+
+// returns a function that takes in a data array to create a path
+function toLine(isClosed) {
+	if (isClosed) {
+		var interpolation = "linear-closed";
+	} else {
+		var interpolation = "linear";
+	}
+	return d3.svg.line()
+    .x(function(d) { return d.x; })
+    .y(function(d) { return d.y; })
+    .interpolate(interpolation);
+}
 
 function generatePoints() {
 	for (var i = 0; i < N; i++) {
 		points[i] = {x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height)};
 	}
+}
+
+function generateTestPoints() {
+	points = [{x: 500, y: 100}, {x: 200, y: 100}, {x: 700, y: 400}, {x: 600, y: 200}, {x: 200, y: 400}];
 }
 
 function drawPoints() { 
@@ -39,6 +47,25 @@ function drawPoints() {
 		return d.y;
 	})
 	.attr("r", 2);
+}
+
+function drawIndices() {
+	svg.selectAll("text")
+		.data(points)
+		.enter()
+		.append("text")
+		.text(function(d, i) {
+			return i;
+		})
+		.attr("fill", "black")
+		.attr("font-family", "sans-serif")
+		.attr("font-size", 12)
+		.attr("x", function(d) {
+			return d.x + 4;
+		})
+		.attr("y", function(d) {
+			return d.y + 4;
+		});
 }
 
 function sqDistance(p1, p2) {
@@ -69,11 +96,14 @@ function distanceEdge(edge) {
 }
 
 function pathDistance() {
-	console.log("distancE!!!");
 	var d = distance(path[0], path[path.length - 1]);
 	for (var i = 1; i < path.length; i++) {
 		d += distance(path[i - 1], path[i]);
 	}
+	d3.select("#distance")
+		.transition()
+		.duration((transitionDuration + instantDuration) * path.length)
+		.text("Distance: " + d.toFixed(2));
 	console.log("The distance is: " + d);
 	return d;
 	// d = distance(points[path[0]], points[path[path.length - 1]]);
@@ -99,114 +129,36 @@ function drawLine(p1, p2) {
 		.attr("stroke", "black");
 }
 
-function animateLines(isClosed) {
-	if (isClosed) {
-		var toLine = toClosedLine;
-	} else {
-		var toLine = toOpenLine;
-	}
+function appendPath(isClosed) {
 	clearLines();
 
 	svg.selectAll("path").remove();
 	var lines = svg
-		//.selectAll("path")
-		//.data(path)
 		.append("path")
-		.attr("d", toLine(path))
+		.attr("d", toLine(isClosed)(path))
 		.attr("fill", "none")
 		.attr("stroke", "black")
 		.attr("stroke-width", 2);
-		//.attr("stroke-dasharray", pathDistance() + " " + pathDistance())
-      	//.attr("stroke-dashoffset", pathDistance())
-      	//.transition()
-      	//.duration(1000)
-      	//.ease("linear")
-      	//.attr("stroke-dashoffset", 0);
-    console.log("hello");
-
-	//lines.transition()
-	//	.attr("d", toLine(path));
-
-		// .data(path, function(d, i) {
-		// 	if (i == path.length - 1) {
-		// 		return edgeToString(d, path[0]);
-		// 	}
-		// 	return edgeToString(d, path[i + 1]);
-		// });
-
-	// lines.exit()
-	// 	.attr("stroke", "red")
-	// 	.transition(1000)
-	// 	.remove();
-
-	// lines.enter()
-	// 	.append("line")
-	// 	.attr("stroke-width", 2)
-	// 	.attr("x1", function(d) {
-	// 		return d.x;
-	// 	})
-	// 	.attr("y1", function(d) {
-	// 		return d.y;
-	// 	})
-	// 	.attr("x2", function(d, i) {
-	// 		return d.x;
-	// 	})
-	// 	.attr("y2", function(d, i) {
-	// 		return d.y;
-	// 	})
-	// 	.attr("stroke", "red")
-	// 	.transition()
-	// 	.delay(function(d, i) {
-	// 		return i * 10;
-	// 	})
-	// 	.attr("stroke", "black")
-	// 	.attr("x2", function(d, i) {
-	// 		if (i == path.length - 1) {
-	// 			return path[0].x;
-	// 		}
-	// 		return path[i + 1].x;
-	// 	})
-	// 	.attr("y2", function(d, i) {
-	// 		if (i == path.length - 1) {
-	// 			return path[0].y;
-	// 		}
-	// 		return path[i + 1].y;
-	// 	});
 }
 
 function updatePath(i, isClosed) {
-	if (isClosed) {
-		var toLine = toClosedLine;
-	} else {
-		var toLine = toOpenLine;
-	}
+	// no duration so that the 2opt path doesn't flicker from transitions
 	svg.selectAll("path")
 		.transition()
-		.ease("linear")
-//		.duration(duration)
-		.delay(transitionDuration * (i + 1))
-		.attr("d", toLine(path));
-}
-
-function updatePathNoInterpolate(i) {
-	svg.selectAll("path")
-		.transition()
-		.ease("linear")
 		.duration(0)
-		.delay(transitionDuration * (i + 1))
-		.attr("d", toClosedLine(path));
+		.delay((transitionDuration + instantDuration) * (i + 1))
+		.attr("d", toLine(isClosed)(path));
+	d3.timer.flush();
 }
 
 function animateEdge(i, before, insert, after) {
-	console.log(before);
-	console.log(insert);
 	// inserting into open circuit e.g. nearest neighbor
 	var lineBeforeInsertion = svg.append("line")
 			.attr("x1", before.x)
 			.attr("y1", before.y)
 			.attr("stroke-width", 3)
-			.attr("stroke", "red");
-
+			.attr("stroke", "red")
+			.attr("opacity", 0);
 
 	if (after != null) {
 		var averageX = (before.x + after.x) / 2;
@@ -218,57 +170,59 @@ function animateEdge(i, before, insert, after) {
 		var lineAfterInsertion = svg.append("line")
 			.attr("x1", after.x)
 			.attr("y1", after.y)
-			.attr("x2", averageX / 2)
-			.attr("y2", averageY / 2)
-			//.attr("stroke", "red")
+			.attr("x2", averageX)
+			.attr("y2", averageY)
+			.attr("stroke", "red")
+			.attr("stroke-width", 3)
+			.attr("opacity", 0)
 			.transition()
-			.delay(i * transitionDuration)
+			.delay(i * (transitionDuration + instantDuration))
+			.duration(instantDuration)
+			.attr("opacity", 1)
+			.transition()
+			//.delay(i * transitionDuration)
 			.duration(transitionDuration)
 			.attr("x2", insert.x)
 			.attr("y2", insert.y)
-			.remove()
+			.remove();
 	} else {
 		lineBeforeInsertion
 			.attr("x2", before.x)
 			.attr("y2", before.y);
 	}
 	lineBeforeInsertion.transition()
-		.delay(i * transitionDuration)
+		.delay(i * (transitionDuration + instantDuration))
+		.duration(instantDuration)
+		.attr("opacity", 1)
+		.transition()
 		.duration(transitionDuration)
 		.attr("x2", insert.x)
 		.attr("y2", insert.y)
 		.remove();
 }
 
-function updateLines() {
-	svg.selectAll("line")
-		.data(path, function(d, i) {
-			if (i == path.length - 1) {
-				return edgeToString(d, path[0]);
-			}
-			return edgeToString(d, path[i + 1]);
-		})
-		.exit()
-		.attr("stroke", "red")
-		.transition()
-		.duration(1000)
-		.remove();
+// function updateLines() {
+// 	svg.selectAll("line")
+// 		.data(path, function(d, i) {
+// 			if (i == path.length - 1) {
+// 				return edgeToString(d, path[0]);
+// 			}
+// 			return edgeToString(d, path[i + 1]);
+// 		})
+// 		.exit()
+// 		.attr("stroke", "red")
+// 		.transition()
+// 		.duration(1000)
+// 		.remove();
 
-	animateLines();
-}
+// 	animateLines();
+// }
 
 function clearLines() {
 	svg.selectAll("path")
 		.remove();
-}
-// returns a string of the edge, with points in order by x (breaking ties with y)
-function edgeToString(p1, p2) {
-	if (p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y)) {
-		return p1.x + "," + p1.y + "," + p2.x + "," + p2.y;
-	}
-	else {
-		return p2.x + "," + p2.y + "," + p1.x + "," + p1.y;
-	}
+	svg.selectAll("line")
+		.remove();
 }
 
 function swap(path, i, j) {
@@ -302,8 +256,7 @@ function smallestEdge() {
 function nearestNeighbor() {
 	remainingPoints = points.slice(0);
 	path = [points[0]];
-	animateLines(false);
-	console.log("hi");
+	appendPath();
 	for (var i = 0; i < points.length - 1; i++) {
 		var nearestSquareDistance = height * height + width * width + 1;
 		var nearestPoint = null;
@@ -322,39 +275,32 @@ function nearestNeighbor() {
 		animateEdge(i, remainingPoints[i], remainingPoints[i + 1], null);
 		updatePath(i, false);
 	}
-	updatePath(path.length, true)
-	console.log(edgeToString(path[0], path[1]));
-	console.log(edgeToString(path[1], path[0]));
-	//swapEdges();
-	//animateLines();
+	animateEdge(path.length - 1, remainingPoints[path.length - 1], path[0], null);
+	updatePath(path.length - 1, true)
 	pathDistance();
 }
 
 function inOrder() {
 	path = points.slice(0);
-	animateLines();
+	appendPath(false);
 	pathDistance();
 }
-
+//FUCKS UP WHEN ADDING TO END
 function nearestInsertion() {
 	// var remainingPoints = smallestEdge();
 	// path = remainingPoints.slice(0, 2);
 	path = [points[0]];
 	var remainingPoints = points.slice(0);
-	//console.log("length of remainingpoints: " + remainingPoints.length);
-	//console.log(remainingPoints[199]);
+	appendPath();
 	for (var i = 1; i < points.length; i++) {
-		var index = 0;
-		var indexInPath = 0;
+		var index = -1;
+		var indexInPath = -1;
 		var nearestSquareDistance = height * height + width * width + 1;
 		var nearestPoint = null;
 		for (var j = i; j < points.length; j++) {
-			//console.log(j);
-			//console.log("path length is:" + path.length);
 			for (var k = 0; k < path.length; k++) {
 				currentDistance = sqDistance(path[k], remainingPoints[j]);
 				if (currentDistance < nearestSquareDistance) {
-					console.log(j + ", " + k);
 					nearestPoint = remainingPoints[j];
 					nearestSquareDistance = currentDistance;
 					index = j;
@@ -364,7 +310,6 @@ function nearestInsertion() {
 		}
 		remainingPoints = swap(remainingPoints, index, i);
 		// wrap-around
-		console.log(distance(path[indexInPath], remainingPoints[i]));
 		if (indexInPath == 0) {
 			var detourBefore = distance(path[path.length - 1], remainingPoints[i]) - distance(path[path.length - 1], path[indexInPath]);
 		} else {
@@ -375,92 +320,79 @@ function nearestInsertion() {
 		} else {
 			var detourAfter = distance(path[indexInPath + 1], remainingPoints[i]) - distance(path[indexInPath], path[indexInPath + 1]);
 		}
-		//console.log("detour after: " + detourAfter);
-		if (detourAfter < detourBefore) {
-			path.splice(i + 1, 0, remainingPoints[i]);
+		if (detourBefore > detourAfter) {
+			animateEdge(i, path[indexInPath], remainingPoints[i], path[indexInPath == path.length - 1 ? 0 : indexInPath + 1]);
+			path.splice(indexInPath + 1, 0, remainingPoints[i]);
 		} else {
-			path.splice(i, 0, remainingPoints[i]);
+			animateEdge(i, path[indexInPath == 0 ? path.length - 1 : indexInPath - 1], remainingPoints[i], path[indexInPath]);
+			path.splice(indexInPath, 0, remainingPoints[i]);
 		}
+		updatePath(i, true);
 	}
-	animateLines();
 	pathDistance();
-
-
 }
 
-function farthestInsertion() {
+function detour(before, insert, after) {
+	return distance(before, insert) + distance(insert, after) - distance(before, after);
+}
+
+function nearFarInsertion(nearest) {
 	path = [points[0]];
 	var remainingPoints = points.slice(0);
-	//console.log("length of remainingpoints: " + remainingPoints.length);
-	//console.log(remainingPoints[199]);
+	appendPath();
 	for (var i = 1; i < points.length; i++) {
-		var index = 0;
+		var indexInRemaining = 0;
 		var indexInPath = 0;
-		var farthestSquareDistance = 0;
-		var farthest = null;
-		for (var j = i; j < points.length; j++) {
-			//console.log(j);
-			//console.log("path length is:" + path.length);
+		if (nearest) {
+			var bestSquareDistance = height * height + width * width + 1;
+		}
+		var bestSquareDistance = -1;
+		var bestPoint = null;
+			for (var j = i; j < points.length; j++) {
 			for (var k = 0; k < path.length; k++) {
-				currentDistance = sqDistance(path[k], remainingPoints[j]);
-				if (currentDistance > farthestSquareDistance) {
-					console.log(j + ", " + k);
-					farthestPoint = remainingPoints[j];
-					farthestSquareDistance = currentDistance;
-					index = j;
-					indexInPath = k;
+				var currentSquareDistance = sqDistance(path[k], remainingPoints[j]);
+				if ((!nearest && currentSquareDistance > bestSquareDistance) 
+					|| (nearest && currentSquareDistance < bestSquareDistance)) {
+					bestPoint = remainingPoints[j];
+					bestSquareDistance = currentSquareDistance;
+					indexInRemaining = j;
 				}
 			}
 		}
-		remainingPoints = swap(remainingPoints, index, i);
-		// wrap-around
-		console.log(distance(path[indexInPath], remainingPoints[i]));
-		console.log(farthestPoint == remainingPoints[i]);
-		if (indexInPath == 0) {
-			var detourBefore = distance(path[path.length - 1], remainingPoints[i]) - distance(path[path.length - 1], path[indexInPath]);
-		} else {
-			var detourBefore = distance(path[indexInPath - 1], remainingPoints[i]) - distance(path[indexInPath - 1], path[indexInPath]);
+		remainingPoints = swap(remainingPoints, indexInRemaining, i);
+		smallestDetour = Math.sqrt(height * height + width * width) + 1;
+		for (var k = 0; k < path.length - 1; k++) {
+			var currentDetour = detour(path[k], remainingPoints[i], path[k + 1]);
+			if (currentDetour < smallestDetour) {
+				smallestDetour = currentDetour;
+				indexInPath = k;
+			}
 		}
-		if (indexInPath == path.length - 1) {
-			var detourAfter = distance(path[0], remainingPoints[i]) - distance(path[indexInPath], path[0]);
+		if (detour(path[path.length - 1], remainingPoints[i], path[0]) < smallestDetour) {
+			animateEdge(i, path[path.length - 1], remainingPoints[i], path[0]);
+			path.splice(path.length, 0, remainingPoints[i]);
 		} else {
-			var detourAfter = distance(path[indexInPath + 1], remainingPoints[i]) - distance(path[indexInPath], path[indexInPath + 1]);
+			animateEdge(i, path[indexInPath], remainingPoints[i], path[indexInPath + 1]);
+			path.splice(indexInPath + 1, 0, remainingPoints[i]);
 		}
-		//console.log("detour after: " + detourAfter);
-		if (detourAfter < detourBefore) {
-			path.splice(i + 1, 0, remainingPoints[i]);
-		} else {
-			path.splice(i, 0, remainingPoints[i]);
-		}
+
+		updatePath(i, true);
 	}
-	animateLines();
 	pathDistance();
-
-
 }
 
 function twoOpt() {
 	var bestDistance = 0;
 	var count = 0
-	while (bestDistance != swapEdges(count * transitionDuration)) {
+	while (bestDistance != swapEdges(count)) {
 		bestDistance = pathDistance();
-		updatePathNoInterpolate(count);
+		updatePath(count, true);
 		count += 1;
 	}
 	//updatePath(0, true, 5000);
 }
 
-function twoPoints() {
-	bestDistance = 0;
-	while (bestDistance != swapPoints()) {
-		bestDistance = pathDistance();
-	}
-	animateLines();
-}
-
-function animateEdgeSwap(delay, i, i1, j, j1) {
-	console.log("animate edge swap");
-
+function animateEdgeSwap(count, i, i1, j, j1) {
 	svg.append("line")
 		.attr("x1", path[i].x)
 		.attr("y1", path[i].y)
@@ -470,7 +402,7 @@ function animateEdgeSwap(delay, i, i1, j, j1) {
 		.attr("stroke", "white")
 		.attr("opacity", 0)
 		.transition()
-		.delay(delay)
+		.delay(count * (instantDuration + transitionDuration))
 		.attr("opacity", 0.5)
 		.transition()
 		.duration(transitionDuration)
@@ -486,7 +418,7 @@ function animateEdgeSwap(delay, i, i1, j, j1) {
 		.attr("stroke", "white")
 		.attr("opacity", 0)
 		.transition()
-		.delay(delay)
+		.delay(count * (instantDuration + transitionDuration))
 		.attr("opacity", 0.5)
 		.transition()
 		.duration(transitionDuration)
@@ -502,7 +434,7 @@ function animateEdgeSwap(delay, i, i1, j, j1) {
 		.attr("stroke", "red")
 		.attr("opacity", 0)
 		.transition()
-		.delay(delay)
+		.delay(count * (instantDuration + transitionDuration))
 		.attr("opacity", 1)
 		.transition()
 		.duration(transitionDuration)
@@ -519,7 +451,7 @@ function animateEdgeSwap(delay, i, i1, j, j1) {
 		.attr("stroke", "red")
 		.attr("opacity", 0)
 		.transition()
-		.delay(delay)
+		.delay(count * (instantDuration + transitionDuration))
 		.attr("opacity", 1)
 		.transition()
 		.duration(transitionDuration)
@@ -528,7 +460,7 @@ function animateEdgeSwap(delay, i, i1, j, j1) {
 		.remove();
 }
 
-function swapEdges(delay) {
+function swapEdges(count) {
 	console.log("2 opt!");
 	// for (var k = 0; k < path.length - 1; k++) {
 	// 	console.log(edgeToString(path[k], path[k + 1]));
@@ -537,7 +469,7 @@ function swapEdges(delay) {
 	for (var i = 0; i < path.length - 1; i++) { 
 		for (var j = i + 2; j < path.length - 1; j++) {
 			if ((distance(path[i], path[i + 1]) + distance(path[j], path[j + 1])) > (distance(path[i], path[j]) + distance(path[j + 1], path[i + 1]))) {
-				animateEdgeSwap(delay, i, i + 1, j, j + 1);
+				animateEdgeSwap(count, i, i + 1, j, j + 1);
 				path = path.slice(0, i + 1).concat(path.slice(i + 1, j + 1).reverse().concat(path.slice(j + 1)));
 				//updateLines();
 				//animateLines();
@@ -548,40 +480,22 @@ function swapEdges(delay) {
 	return pathDistance();
 }
 
-//worse than swapEdges
-// function swapPoints() {
-// 	for (var i = 1; i < path.length - 1; i++) {
-// 		for (var j = i + 2; j < path.length - 1; j++) {
-// 			var beforeI = i - 1;
-// 			var afterJ = j + 1;
-// 			if (i == 0) {
-// 				beforeI = path.length - 1;
-// 			}
-// 			if (j == path.length - 1) {
-// 				afterJ = 0;
-// 			}
-// 			var afterSwap = distance(path[beforeI], path[j]) + distance(path[i + 1], path[j]) + distance(path[j - 1], path[i]) + distance(path[afterJ], path[i]);
-// 			var beforeSwap = distance(path[beforeI], path[i]) + distance(path[i + 1], path[i]) + distance(path[j - 1], path[j]) + distance(path[afterJ], path[j]);
-// 			if (afterSwap < beforeSwap) {
-// 				console.log(i + ", " + j);
-// 				console.log(afterSwap);
-// 				console.log(beforeSwap);
-// 				console.log("Swap");
-// 				swap = path[i];
-// 				path[i] = path[j];
-// 				path[j] = swap;
-// 				return pathDistance();
-// 			}
-// 		}
-// 	}
-// 	return pathDistance();
-// }
 generatePoints();
 drawPoints();
 
+
 $("#nearest-neighbor").on("click", nearestNeighbor);
-$("#nearest-insertion").on("click", nearestInsertion);
-$("#farthest-insertion").on("click", farthestInsertion);
+$("#nearest-insertion").on("click", function() {
+	console.time("one");
+	nearestInsertion();
+	console.timeEnd("one");
+	 });
+$("#nearest-insertion-two").on("click", function() {
+	console.time("two");
+	nearFarInsertion(true);
+	console.timeEnd("two");
+	 });
+$("#farthest-insertion").on("click", function() { return nearFarInsertion(false) });
 $("#in-order").on("click", inOrder);
 $("#2-opt").on("click", twoOpt);
 // $("#2-points").on("click", twoPoints);
