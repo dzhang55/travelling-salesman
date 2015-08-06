@@ -1,7 +1,7 @@
 // hardcoded
 var height = 500;
 var width = 960;
-var N = 10;
+var N = 200;
 var transitionDuration = 10000 / N;
 var instantDuration = 20;
 
@@ -350,21 +350,22 @@ function nearFarInsertion(farthest) {
 	path = [points[0]];
 	var remainingPoints = points.slice(0);
 	appendPath();
+
 	for (var i = 1; i < points.length; i++) {
 		var indexInRemaining = 0;
 		var indexInPath = 0;
 		var minimalSquareDistance = height * height + width * width + 1;
 		var maximalSquareDistanceToTour = -1;
 		var bestPoint = null;
+
 		for (var j = i; j < points.length; j++) {
+
 			if (farthest) {
 				minimalSquareDistance = height * height + width * width + 1;
 			}
+
 			for (var k = 0; k < path.length; k++) {
 				var currentSquareDistance = sqDistance(path[k], remainingPoints[j]);
-				console.log(path[k]);
-				console.log(remainingPoints[j]);
-				console.log(currentSquareDistance);
 
 				// find minimal distance from j to a point in the subtour
 				if (currentSquareDistance < minimalSquareDistance) {
@@ -387,7 +388,7 @@ function nearFarInsertion(farthest) {
 			}	
 
 		}
-		console.log(bestPoint);
+
 		remainingPoints = swap(remainingPoints, indexInRemaining, i);
 		smallestDetour = Math.sqrt(height * height + width * width) + 1;
 		for (var k = 0; k < path.length - 1; k++) {
@@ -397,6 +398,7 @@ function nearFarInsertion(farthest) {
 				indexInPath = k;
 			}
 		}
+		// check the detour between last point and first
 		if (detour(path[path.length - 1], remainingPoints[i], path[0]) < smallestDetour) {
 			animateEdge(i, path[path.length - 1], remainingPoints[i], path[0]);
 			path.splice(path.length, 0, remainingPoints[i]);
@@ -412,6 +414,12 @@ function nearFarInsertion(farthest) {
 }
 
 function twoOpt() {
+	// removes all scheduled transitions
+	d3.selectAll("line")
+	 	.remove();
+	// d3.selectAll("path")
+	// 	.transition();
+	d3.timer.flush();
 	var bestDistance = 0;
 	var count = 0
 	while (bestDistance != swapEdges(count)) {
@@ -512,7 +520,7 @@ function swapEdges(count) {
 
 generatePoints();
 drawPoints();
-drawIndices();
+//drawIndices();
 
 
 $("#nearest-neighbor").on("click", nearestNeighbor);
