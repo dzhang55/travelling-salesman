@@ -2,9 +2,27 @@
 	<title>Travelling Salesman</title>
 
 	<style>
+	div {
+		padding: 10px;
+	}
+	
+	.axis path,
+	.axis line {
+    	fill: none;
+    	stroke: black;
+    	shape-rendering: crispEdges;
+	}
+
+	.axis text {
+    	font-family: sans-serif;
+    	font-size: 11px;
+	}
 	</style>
 </head>
 <body>
+	<button id="hill-climber">Hill Climber</button>
+	<button id="simulated-annealing">Simulated Annealing</button>
+	<button id="simulated-annealing-exp">Simulated Annealing Exponential</button>
 	<button id="2-opt">2-opt</button>
 <!-- 	<button id="2-points">2-points</button> -->
 	<button id="nearest-insertion">Nearest Insertion</button>
@@ -14,6 +32,7 @@
 	<button id="in-order">In Order</button>
 	<button id="clear">Clear</button>
 	<div id="svg-container"></div>
+	<div id="graph-container"></div>
 	<h2 id="distance">Distance: 0</h2>
 	<input id="animate" type="checkbox" checked="checked">Animate</input>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>

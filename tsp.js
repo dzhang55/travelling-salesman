@@ -2,20 +2,68 @@
 var height = 500;
 var width = 960;
 var N = 200;
-var transitionDuration = 10000 / N;
+var transitionDuration = 12000 / N;
 var instantDuration = 20;
+var currPathDistance = 0;
+var lineWidth = 2;
 
 var svg = d3.select("#svg-container").append("svg")
 	.attr("width", width)
 	.attr("height", height);
 
+var graph = d3.select("#graph-container").append("svg")
+	.attr("width", width)
+	.attr("height", height / 2)
+	.append("path");
+
+var distanceStatus = svg.append("text")
+	.text(function() {
+		return "Distance: " + currPathDistance;
+	});
+
 var points = new Array(N);
 var path = [];
+var distances = [];
+
+function initializeGraph() {
+
+	var x = d3.scale.linear().domain([0, distances.length]).range([0, width - 5]);
+	var y = d3.scale.linear().domain([distances[0], 0]).range([0, height / 2 - 5]);
+
+	var xAxis = d3.svg.axis()	
+  	  .scale(x)
+  	  .orient("bottom");
+
+	var yAxis = d3.svg.axis()
+		.scale(y)
+		.orient("left");
+
+	d3.select("#graph-container").select("svg").append("g")
+		.attr("class", "axis")
+		.call(xAxis)
+		.call(yAxis);
+
+	var graphLine = d3.svg.line()
+		.x(function(d, i) {
+			return x(i);
+		})
+		.y(function(d) {
+			// hardcoded range
+			return y(d);
+		})
+		.interpolate("linear");
+
+	graph
+		.attr("d", graphLine(distances))
+		.attr("fill", "none")
+		.attr("stroke", "blue")
+		.attr("stroke-width", lineWidth);
+}
 
 // updates the transition durations based on animate checkbox
 function checkAnimation() {
 	if ($("#animate").prop("checked")) {
-		transitionDuration = 10000 / N;
+		transitionDuration = 12000 / N;
 		instantDuration = 20;
 	} else {
 		transitionDuration = 0;
@@ -94,6 +142,7 @@ function generateDistanceMatrix(points) {
 		for (var j = i + 1; j < N; j++) {
 			distances[i][j] = Math.sqrt((points[i].x - points[j].x) *(points[i].x - points[j].x)
 				 + (points[i].y - points[j].y) * (points[i].y - points[j].y));
+			distances[j][i] = distances[i][j];
 		}
 	}
 }
@@ -112,8 +161,18 @@ function pathDistance() {
 		.transition()
 		.duration((transitionDuration + instantDuration) * path.length)
 		.text("Distance: " + d.toFixed(2));
-	console.log("The distance is: " + d);
+	//console.log("The distance is: " + d);
 	return d;
+}
+
+function updatePathDistance(change, count) {
+	currPathDistance += change;
+	d3.select("#distance")
+		.transition()
+		.delay((transitionDuration + instantDuration) * count)
+		.duration(transitionDuration)
+		.text("Disance: " + currPathDistance.toFixed(2));
+	return currPathDistance;
 }
 
 // initiliazes the path
@@ -126,7 +185,7 @@ function appendPath(isClosed) {
 		.attr("d", toLine(isClosed)(path))
 		.attr("fill", "none")
 		.attr("stroke", "black")
-		.attr("stroke-width", 2);
+		.attr("stroke-width", lineWidth);
 }
 
 // chains transitions for each update of the path
@@ -147,7 +206,7 @@ function animateEdge(i, before, insert, after) {
 	var lineBeforeInsertion = svg.append("line")
 			.attr("x1", before.x)
 			.attr("y1", before.y)
-			.attr("stroke-width", 3)
+			.attr("stroke-width", lineWidth * 1.5)
 			.attr("stroke", "red")
 			.attr("opacity", 0);
 
@@ -164,7 +223,7 @@ function animateEdge(i, before, insert, after) {
 			.attr("x2", averageX)
 			.attr("y2", averageY)
 			.attr("stroke", "red")
-			.attr("stroke-width", 3)
+			.attr("stroke-width", lineWidth * 1.5)
 			.attr("opacity", 0)
 			.transition()
 			.delay(i * (transitionDuration + instantDuration))
@@ -193,13 +252,13 @@ function animateEdge(i, before, insert, after) {
 
 // creates two white lines to cover previous edges and transitions two red lines
 // to the swapped position
-function animateEdgeSwap(count, i, i1, j, j1) {
+function animateEdgeSwap(count, i0, i1, j0, j1) {
 	svg.append("line")
-		.attr("x1", path[i].x)
-		.attr("y1", path[i].y)
+		.attr("x1", path[i0].x)
+		.attr("y1", path[i0].y)
 		.attr("x2", path[i1].x)
 		.attr("y2", path[i1].y)
-		.attr("stroke-width", 3)
+		.attr("stroke-width", lineWidth * 1.5)
 		.attr("stroke", "white")
 		.attr("opacity", 0)
 		.transition()
@@ -211,11 +270,11 @@ function animateEdgeSwap(count, i, i1, j, j1) {
 		.remove();
 
 	svg.append("line")
-		.attr("x1", path[j].x)
-		.attr("y1", path[j].y)
+		.attr("x1", path[j0].x)
+		.attr("y1", path[j0].y)
 		.attr("x2", path[j1].x)
 		.attr("y2", path[j1].y)
-		.attr("stroke-width", 3)
+		.attr("stroke-width", lineWidth * 1.5)
 		.attr("stroke", "white")
 		.attr("opacity", 0)
 		.transition()
@@ -227,11 +286,11 @@ function animateEdgeSwap(count, i, i1, j, j1) {
 		.remove();
 
 	svg.append("line")
-		.attr("x1", path[i].x)
-		.attr("y1", path[i].y)
+		.attr("x1", path[i0].x)
+		.attr("y1", path[i0].y)
 		.attr("x2", path[i1].x)
 		.attr("y2", path[i1].y)
-		.attr("stroke-width", 4)
+		.attr("stroke-width", lineWidth * 2)
 		.attr("stroke", "red")
 		.attr("opacity", 0)
 		.transition()
@@ -239,16 +298,16 @@ function animateEdgeSwap(count, i, i1, j, j1) {
 		.attr("opacity", 1)
 		.transition()
 		.duration(transitionDuration)
-		.attr("x2", path[j].x)
-		.attr("y2", path[j].y)
+		.attr("x2", path[j0].x)
+		.attr("y2", path[j0].y)
 		.remove();
 
 	svg.append("line")
-		.attr("x1", path[j].x)
-		.attr("y1", path[j].y)
+		.attr("x1", path[j0].x)
+		.attr("y1", path[j0].y)
 		.attr("x2", path[j1].x)
 		.attr("y2", path[j1].y)
-		.attr("stroke-width", 4)
+		.attr("stroke-width", lineWidth * 2)
 		.attr("stroke", "red")
 		.attr("opacity", 0)
 		.transition()
@@ -258,6 +317,38 @@ function animateEdgeSwap(count, i, i1, j, j1) {
 		.duration(transitionDuration)
 		.attr("x1", path[i1].x)
 		.attr("y1", path[i1].y)
+		.remove();
+}
+
+function animateEdgeHighlight(count, i, i1, j, j1) {
+	svg.append("line")
+		.attr("x1", path[i].x)
+		.attr("y1", path[i].y)
+		.attr("x2", path[i1].x)
+		.attr("y2", path[i1].y)
+		.attr("stroke-width", lineWidth * 2)
+		.attr("stroke", "red")
+		.attr("opacity", 0)
+		.transition()
+		.delay(count * (instantDuration + transitionDuration))
+		.attr("opacity", 1)
+		.transition()
+		.duration(transitionDuration)
+		.remove();
+
+	svg.append("line")
+		.attr("x1", path[j].x)
+		.attr("y1", path[j].y)
+		.attr("x2", path[j1].x)
+		.attr("y2", path[j1].y)
+		.attr("stroke-width", lineWidth * 2)
+		.attr("stroke", "red")
+		.attr("opacity", 0)
+		.transition()
+		.delay(count * (instantDuration + transitionDuration))
+		.attr("opacity", 1)
+		.transition()
+		.duration(transitionDuration)
 		.remove();
 }
 
@@ -454,8 +545,95 @@ function detour(before, insert, after) {
 	return distance(before, insert) + distance(insert, after) - distance(before, after);
 }
 
+function hillClimber(step, numSteps) {
+	return 0;
+}
+
+function linearSA(startTemp, step, numSteps) {
+	return (1 - step / numSteps) * startTemp;
+}
+
+function exponentialSA(startTemp, step, numSteps) {
+	//end temp around 1 because ln startTemp is approx 5
+	return startTemp * Math.exp((0.0 - step) / numSteps * 5);
+}
+
+function simulatedAnnealing(coolingFunction) {
+	distances = [];
+	// N * 300
+	var steps = N * 300;
+	var startTemp = N / 2;
+	var endTemp = 1;
+	currPathDistance = pathDistance();
+
+	var numSwaps = 0;
+
+	//var bestDistance = Number.MAX_SAFE_INTEGER;
+	for (var step = 0; step < steps; step++) {
+		temp = coolingFunction(startTemp, step, steps);
+		console.log(temp);
+		var i = Math.floor(path.length * Math.random());
+		var j = Math.floor(path.length * Math.random());
+		var first = Math.min(i, j);
+		var second = Math.max(i, j);
+
+		if (first == path.length - 1) {
+			first = Math.floor((path.length - 1) * Math.random());
+		}
+
+		// check edge from last point to first
+		var afterSecond = second == path.length - 1 ? 0 : second + 1;
+		//console.log("before: " + (distance(path[first], path[first + 1]) + distance(path[second], path[afterSecond])));
+		//console.log("after: " + (distance(path[first], path[second]) + distance(path[afterSecond], path[first + 1])));
+		
+		var changeInDistance = distance(path[first], path[second]) + distance(path[afterSecond], path[first + 1])
+			- (distance(path[first], path[first + 1]) + distance(path[second], path[afterSecond]));
+
+		//console.log(changeInDistance);
+
+		// always accept step if it is superior, accept with some chance if it is inferior
+		if (changeInDistance < 0 || Math.random() <= Math.exp((0 - changeInDistance) / temp)) {
+			if (changeInDistance > 0) {
+				console.log(step + " inferior step");
+			}
+			numSwaps += 1;
+			//if (step % 50 == 0) {
+				animateEdgeSwap(step, first, first + 1, second, afterSecond);
+			//	updatePath(step / 50, true);
+			//}
+			path = swapEdges(first, second);
+			//if (currDistance < bestDistance) {
+			//	bestDistance = currDistance;
+			//}
+			currPathDistance = pathDistance();
+			distances.push(currPathDistance);
+		} 
+		else {
+			animateEdgeHighlight(step, first, first + 1, second, afterSecond);
+		//	updatePath(step / 50, true);
+		}
+		updatePath(step, true);
+	}
+	console.log("distance is " + currPathDistance);
+	console.log("number of swaps: " + numSwaps);
+	updatePath(step, true);
+	initializeGraph();
+}
+
+function genetic() {
+	var paths = []
+	var popSize = 100;
+	for (var i = 0; i < popSize; i++) {
+		//paths[i] = points.slice(0);
+		// swap random index with first
+		// perform nearest neighbor
+	}
+
+	
+}
+
 // performs two opt swaps iteratively until no more advantageous swaps are found
-function twoOpt() {
+function iterativeTwoOpt() {
 	// removes all scheduled transitions
 	d3.selectAll("line")
 	 	.remove();
@@ -464,27 +642,37 @@ function twoOpt() {
 	d3.timer.flush();
 	var bestDistance = 0;
 	var count = 0
-	while (bestDistance != swapEdges(count)) {
+	while (bestDistance != twoOpt(count)) {
 		bestDistance = pathDistance();
 		updatePath(count, true);
 		count += 1;
 	}
 }
 
-function swapEdges(count) {
+function twoOpt(count) {
 	console.log("2 opt!");
-	for (var i = 0; i < path.length - 1; i++) { 
+	for (var i = 0; i < path.length - 2; i++) { 
 		for (var j = i + 2; j < path.length - 1; j++) {
 			if ((distance(path[i], path[i + 1]) + distance(path[j], path[j + 1])) > (distance(path[i], path[j]) + distance(path[j + 1], path[i + 1]))) {
 				animateEdgeSwap(count, i, i + 1, j, j + 1);
-				path = path.slice(0, i + 1).concat(path.slice(i + 1, j + 1).reverse().concat(path.slice(j + 1)));
+				path = swapEdges(i, j);
 				return pathDistance();
 			}
+		}
+		// check the edge from last point to first point
+		if ((distance(path[i], path[i + 1]) + distance(path[j], path[0])) > (distance(path[i], path[j]) + distance(path[0], path[i + 1]))) {
+			animateEdgeSwap(count, i, i + 1, j, 0);
+			path = swapEdges(i, j);
+			return pathDistance();
 		}
 	}
 	return pathDistance();
 }
 
+function swapEdges(first, second) {
+	return path.slice(0, first + 1).concat(path.slice(first + 1, second + 1).reverse().concat(path.slice(second + 1)));
+}
+//initializeGraph();
 generatePoints();
 drawPoints();
 //drawIndices();
@@ -502,12 +690,31 @@ $("#nearest-insertion-two").on("click", function() {
 	nearFarInsertion(false);
 	console.timeEnd("two");
 	 });
-$("#farthest-insertion").on("click", function() { return nearFarInsertion(true) });
+$("#farthest-insertion").on("click", function() {
+	console.time("fi");
+	nearFarInsertion(true);
+	console.timeEnd("fi");
+});
 $("#in-order").on("click", inOrder);
-$("#2-opt").on("click", twoOpt);
+$("#hill-climber").on("click", function() {
+	console.time("hc");
+	simulatedAnnealing(hillClimber);
+	console.timeEnd("hc");
+});
+$("#simulated-annealing").on("click", function() {
+	console.time("sa");
+	simulatedAnnealing(linearSA);
+	console.timeEnd("sa");
+});
+$("#simulated-annealing-exp").on("click", function() {
+	console.time("sa-exp");
+	simulatedAnnealing(exponentialSA);
+	console.timeEnd("sa-exp");
+});
+$("#2-opt").on("click", iterativeTwoOpt);
 // $("#2-points").on("click", twoPoints);
 $("#clear").on("click", function() {
 	clearLines();
-	path = []
+	path = [];
 });
 $("#animate").on("click", checkAnimation);
