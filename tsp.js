@@ -127,11 +127,7 @@ function drawIndices() {
 		});
 }
 
-function sqDistance(p1, p2) {
-	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
-}
 
-// not in use
 function generateDistanceMatrix(points) {
 	distances = new Array(N);
 	for (var i = 0; i < N; i++) {
@@ -147,16 +143,12 @@ function generateDistanceMatrix(points) {
 	}
 }
 
-function distance(p1, p2) {
-	 return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
-	//return distances[Math.min(p1, p2)][Math.max(p1, p2)];
-}
-
 function pathDistance() {
 	var d = distance(path[0], path[path.length - 1]);
 	for (var i = 1; i < path.length; i++) {
 		d += distance(path[i - 1], path[i]);
 	}
+	// NEED TO INCLUDE THIS
 	d3.select("#distance")
 		.transition()
 		.duration((transitionDuration + instantDuration) * path.length)
@@ -167,6 +159,8 @@ function pathDistance() {
 
 function updatePathDistance(change, count) {
 	currPathDistance += change;
+
+	// NEED TO INCLUDE THIS
 	d3.select("#distance")
 		.transition()
 		.delay((transitionDuration + instantDuration) * count)
@@ -176,7 +170,7 @@ function updatePathDistance(change, count) {
 }
 
 // initiliazes the path
-function appendPath(isClosed) {
+function appendPath(path, isClosed) {
 	clearLines();
 
 	svg.selectAll("path").remove();
@@ -189,7 +183,7 @@ function appendPath(isClosed) {
 }
 
 // chains transitions for each update of the path
-function updatePath(i, isClosed) {
+function updatePath(path, i, isClosed) {
 	// no duration so that the 2opt path doesn't flicker from transitions
 	svg.selectAll("path")
 		.transition()
@@ -359,14 +353,6 @@ function clearLines() {
 		.remove();
 }
 
-function swap(path, i, j) {
-	var clone = path.slice(0);
-	var temp = clone[i];
-	clone[i] = clone[j];
-	clone[j] = temp;
-	return clone;
-}
-
 // no longer in use - finds the smallest edge in the points array
 function smallestEdge() {
 	var smallestEdgeFirst = points.slice(0);
@@ -388,10 +374,20 @@ function smallestEdge() {
 }
 
 // inorder tour
-function inOrder() {
-	path = points.slice(0);
-	appendPath(false);
-	pathDistance();
+function inOrder(animate) {
+	var tour = new Tour(points, distances);
+	appendPath(tour.path, false);
+	if (animate) {
+		for (var i = 0; i < points.length; i++) {
+			tour.path.push(points[i])
+			updatePath(tour.path, i, false);
+		}
+	} else {
+		tour.path = points.slice(0);
+		appendPath(tour.path, false);
+	}
+	tour.pathDistance();
+	displayDistance(tour.currPathDistance);
 }
 
 
@@ -399,7 +395,7 @@ function inOrder() {
 function nearestNeighbor() {
 	remainingPoints = points.slice(0);
 	path = [points[0]];
-	appendPath();
+	appendPath(path, false);
 	for (var i = 0; i < points.length - 1; i++) {
 		var nearestSquareDistance = height * height + width * width + 1;
 		var nearestPoint = null;
@@ -429,7 +425,7 @@ function nearestInsertion() {
 	// path = remainingPoints.slice(0, 2);
 	path = [points[0]];
 	var remainingPoints = points.slice(0);
-	appendPath();
+	appendPath(path, true);
 	for (var i = 1; i < points.length; i++) {
 		var index = -1;
 		var indexInPath = -1;
@@ -475,7 +471,7 @@ function nearFarInsertion(farthest) {
 	// create initial single point subtour
 	path = [points[0]];
 	var remainingPoints = points.slice(0);
-	appendPath();
+	appendPath(path, true);
 
 	for (var i = 1; i < points.length; i++) {
 		var indexInRemaining = 0;
@@ -669,9 +665,6 @@ function twoOpt(count) {
 	return pathDistance();
 }
 
-function swapEdges(first, second) {
-	return path.slice(0, first + 1).concat(path.slice(first + 1, second + 1).reverse().concat(path.slice(second + 1)));
-}
 //initializeGraph();
 generatePoints();
 drawPoints();
