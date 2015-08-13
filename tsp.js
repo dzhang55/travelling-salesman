@@ -58,6 +58,9 @@ function initializeGraph() {
 		.attr("fill", "none")
 		.attr("stroke", "blue")
 		.attr("stroke-width", lineWidth);
+
+	// reset distances for next graph
+	distances = [];
 }
 
 // updates the transition durations based on animate checkbox
@@ -152,27 +155,22 @@ function distance(p1, p2) {
 	//return distances[Math.min(p1, p2)][Math.max(p1, p2)];
 }
 
-function pathDistance() {
+function pathDistance(path) {
 	var d = distance(path[0], path[path.length - 1]);
 	for (var i = 1; i < path.length; i++) {
 		d += distance(path[i - 1], path[i]);
 	}
-	d3.select("#distance")
-		.transition()
-		.duration((transitionDuration + instantDuration) * path.length)
-		.text("Distance: " + d.toFixed(2));
+	//d3.select("#distance")
+	//	.transition()
+	//	.duration((transitionDuration + instantDuration) * path.length)
+	//	.text("Distance: " + d.toFixed(2));
 	//console.log("The distance is: " + d);
 	return d;
 }
 
-function updatePathDistance(change, count) {
-	currPathDistance += change;
+function updatePathDistance() {
 	d3.select("#distance")
-		.transition()
-		.delay((transitionDuration + instantDuration) * count)
-		.duration(transitionDuration)
-		.text("Disance: " + currPathDistance.toFixed(2));
-	return currPathDistance;
+		.text("Distance: " + (distances[distances.length - 1]).toFixed(2));
 }
 
 // initiliazes the path
@@ -391,14 +389,18 @@ function smallestEdge() {
 function inOrder() {
 	path = points.slice(0);
 	appendPath(false);
-	pathDistance();
+	distances.push(pathDistance(path));
+	updatePathDistance();
+	initializeGraph();
 }
 
 
 // tour of points using nearest neighbor heuristic
 function nearestNeighbor() {
 	remainingPoints = points.slice(0);
-	path = [points[0]];
+	var randomIndex = Math.floor(points.length * Math.random());
+	remainingPoints = swap(remainingPoints, 0, randomIndex);
+	path = [remainingPoints[0]];
 	appendPath();
 	for (var i = 0; i < points.length - 1; i++) {
 		var nearestSquareDistance = height * height + width * width + 1;
@@ -420,7 +422,8 @@ function nearestNeighbor() {
 	}
 	animateEdge(path.length - 1, remainingPoints[path.length - 1], path[0], null);
 	updatePath(path.length - 1, true)
-	pathDistance();
+	distances.push(pathDistance(path));
+	updatePathDistance();
 }
 
 //deprecated - slightly faster but less optimal due to always inserting near closest point
@@ -467,14 +470,17 @@ function nearestInsertion() {
 		}
 		updatePath(i, true);
 	}
-	pathDistance();
+	distances.push(pathDistance(path));
+	updatePathDistance();
 }
 
 // tour of points using either nearest or farthest insertion heuristic
 function nearFarInsertion(farthest) {
 	// create initial single point subtour
-	path = [points[0]];
-	var remainingPoints = points.slice(0);
+	remainingPoints = points.slice(0);
+	var randomIndex = Math.floor(points.length * Math.random());
+	remainingPoints = swap(remainingPoints, 0, randomIndex);
+	path = [remainingPoints[0]];
 	appendPath();
 
 	for (var i = 1; i < points.length; i++) {
@@ -537,8 +543,8 @@ function nearFarInsertion(farthest) {
 
 		updatePath(i, true);
 	}
-	console.log(path.length);
-	pathDistance();
+	distances.push(pathDistance(path));
+	updatePathDistance();
 }
 
 function detour(before, insert, after) {
@@ -560,18 +566,17 @@ function exponentialSA(startTemp, step, numSteps) {
 
 function simulatedAnnealing(coolingFunction) {
 	distances = [];
-	// N * 300
-	var steps = N * 300;
+	//var steps = N * 300;
+	var steps = 10000;
 	var startTemp = N / 2;
 	var endTemp = 1;
-	currPathDistance = pathDistance();
+	currPathDistance = pathDistance(path);
 
 	var numSwaps = 0;
 
 	//var bestDistance = Number.MAX_SAFE_INTEGER;
 	for (var step = 0; step < steps; step++) {
 		temp = coolingFunction(startTemp, step, steps);
-		console.log(temp);
 		var i = Math.floor(path.length * Math.random());
 		var j = Math.floor(path.length * Math.random());
 		var first = Math.min(i, j);
@@ -601,11 +606,11 @@ function simulatedAnnealing(coolingFunction) {
 				animateEdgeSwap(step, first, first + 1, second, afterSecond);
 			//	updatePath(step / 50, true);
 			//}
-			path = swapEdges(first, second);
+			path = swapEdges(path, first, second);
 			//if (currDistance < bestDistance) {
 			//	bestDistance = currDistance;
 			//}
-			currPathDistance = pathDistance();
+			currPathDistance = pathDistance(path);
 			distances.push(currPathDistance);
 		} 
 		else {
@@ -617,19 +622,145 @@ function simulatedAnnealing(coolingFunction) {
 	console.log("distance is " + currPathDistance);
 	console.log("number of swaps: " + numSwaps);
 	updatePath(step, true);
+	updatePathDistance();
 	initializeGraph();
 }
 
 function genetic() {
-	var paths = []
-	var popSize = 100;
+	console.log("genetic algorithm");
+	var parentPaths = [];
+	var childrenPaths = [];
+	var popSize = 1000;
+	var generations = 1500;
+	var mutationChance = 0.08;
+	var bestDistanceSoFar = Number.MAX_VALUE;
+	var bestPath = points;
+
 	for (var i = 0; i < popSize; i++) {
-		//paths[i] = points.slice(0);
-		// swap random index with first
-		// perform nearest neighbor
+		parentPaths[i] = points.slice(0);
+		parentPaths[i] = shuffle(parentPaths[i]);
 	}
 
-	
+	for (var i = 0; i < generations; i++) {
+		childrenPaths = [];
+		for (var j = 0; j < popSize; j++) {
+			var firstParent = tournamentSelect(parentPaths);
+			var secondParent = tournamentSelect(parentPaths);
+			var child = orderCrossover(parentPaths[firstParent], parentPaths[secondParent]);
+
+			if (Math.random() < mutationChance) {
+				child = mutation(child);
+				//console.log("mutated!");
+			}
+			//childrenPaths[j] = child;
+			childrenPaths.push(child);
+			var childFitness = pathDistance(child);
+			if (childFitness < bestDistanceSoFar) {
+				bestDistanceSoFar = childFitness;
+				bestPath = child;
+			}
+		}
+		distances.push(bestDistanceSoFar);
+		console.log(bestDistanceSoFar);
+		parentPaths.length = 0;
+		parentPaths = childrenPaths;
+	}
+	path = bestPath;
+	appendPath(true);
+	console.log("The distance is: " + pathDistance(path));
+	updatePathDistance();
+	initializeGraph();
+}
+
+function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+    return arr;
+}
+
+function tournamentSelect(paths) {
+	var tournamentSize = 8;
+	var fittest = -1;
+	var bestDistance = Number.MAX_VALUE;
+	for (var i = 0; i < tournamentSize; i++) {
+		var randomIndex = Math.floor(paths.length * Math.random());
+		var fitness = pathDistance(paths[randomIndex]);
+		if (fitness < bestDistance) {
+			bestDistance = fitness;
+			fittest = randomIndex;
+		}
+	}
+	return fittest;
+}
+
+function orderCrossover(firstPath, secondPath) {
+	var firstChild = [];
+	//var secondChild = [];
+
+	var i = Math.floor(firstPath.length * Math.random());
+	var j = Math.floor(firstPath.length * Math.random());
+	var first = Math.min(i, j);
+	var second = Math.max(i, j);
+
+	for (var i = first; i <= second; i++) {
+		firstChild[i] = firstPath[i];
+		//secondChild[i] = secondPath[i];
+	}
+
+	//var indexInFirst = 0;
+	var indexInSecond = 0;
+	for (var i = 0; i < firstPath.length; i++) {
+		if (i >= first && i <= second) {
+			continue;
+		}
+		while (contains(firstChild, secondPath[indexInSecond], first, second)) {
+			indexInSecond++;
+		}
+		//while (contains(secondChild, firstPath[indexInFirst], begin, end)) {
+		//	indexInFirst++;
+		//}
+		firstChild[i] = secondPath[indexInSecond];
+		//console.log("adding to " + i);
+		//console.log(firstChild[i]);
+		indexInSecond++;
+		//secondChild[i] = firstPath[indexInFirst];
+	}
+	//return {firstChild: firstChild, secondChild: secondChild};
+	return firstChild;
+}
+
+function mutation(child) {
+	var i = Math.floor(child.length * Math.random());
+	var j = Math.floor(child.length * Math.random());
+	var first = Math.min(i, j);
+	var second = Math.max(i, j);
+
+	if (first == child.length - 1) {
+		first = Math.floor((child.length - 1) * Math.random());
+	}
+
+	// check edge from last point to first
+	var afterSecond = second == child.length - 1 ? 0 : second + 1;
+
+	var changeInDistance = distance(child[first], child[second]) + distance(child[afterSecond], child[first + 1]) 
+		- (distance(child[first], child[first + 1]) + distance(child[second], child[afterSecond]));
+
+	child = swapEdges(child, first, second);
+
+	return child;
+}
+
+function contains(childPath, point, begin, end) {
+	for (var i = begin; i <= end; i++) {
+		if (childPath[i] == point) {
+			return true;
+		}
+	}
+	return false;
 }
 
 // performs two opt swaps iteratively until no more advantageous swaps are found
@@ -643,10 +774,13 @@ function iterativeTwoOpt() {
 	var bestDistance = 0;
 	var count = 0
 	while (bestDistance != twoOpt(count)) {
-		bestDistance = pathDistance();
+		bestDistance = pathDistance(path);
+		distances.push(bestDistance);
 		updatePath(count, true);
 		count += 1;
 	}
+	updatePathDistance();
+	initializeGraph();
 }
 
 function twoOpt(count) {
@@ -655,28 +789,27 @@ function twoOpt(count) {
 		for (var j = i + 2; j < path.length - 1; j++) {
 			if ((distance(path[i], path[i + 1]) + distance(path[j], path[j + 1])) > (distance(path[i], path[j]) + distance(path[j + 1], path[i + 1]))) {
 				animateEdgeSwap(count, i, i + 1, j, j + 1);
-				path = swapEdges(i, j);
-				return pathDistance();
+				path = swapEdges(path, i, j);
+				return pathDistance(path);
 			}
 		}
 		// check the edge from last point to first point
 		if ((distance(path[i], path[i + 1]) + distance(path[j], path[0])) > (distance(path[i], path[j]) + distance(path[0], path[i + 1]))) {
 			animateEdgeSwap(count, i, i + 1, j, 0);
-			path = swapEdges(i, j);
-			return pathDistance();
+			path = swapEdges(path, i, j);
+			return pathDistance(path);
 		}
 	}
-	return pathDistance();
+	return pathDistance(path);
 }
 
-function swapEdges(first, second) {
+function swapEdges(path, first, second) {
 	return path.slice(0, first + 1).concat(path.slice(first + 1, second + 1).reverse().concat(path.slice(second + 1)));
 }
 //initializeGraph();
 generatePoints();
 drawPoints();
 //drawIndices();
-
 
 $("#nearest-neighbor").on("click", nearestNeighbor);
 $("#nearest-insertion").on("click", function() {
@@ -710,6 +843,11 @@ $("#simulated-annealing-exp").on("click", function() {
 	console.time("sa-exp");
 	simulatedAnnealing(exponentialSA);
 	console.timeEnd("sa-exp");
+});
+$("#genetic").on("click", function() {
+	//console.time("g");
+	genetic();
+	//console.timeEnd("g");
 });
 $("#2-opt").on("click", iterativeTwoOpt);
 // $("#2-points").on("click", twoPoints);
