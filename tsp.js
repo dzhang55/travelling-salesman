@@ -27,6 +27,10 @@ var pathDistances = [];
 var distanceMatrix = new Array(N);
 var animate = true;
 
+function loadingScreen() {
+
+}
+
 // creates the graph of the path distances throughout iterations
 function initializeGraph() {
 	var x = d3.scale.linear().domain([0, pathDistances.length]).range([0, width - 5]);
@@ -90,6 +94,7 @@ function toLine(isClosed) {
 }
 
 function generatePoints() {
+	points = [];
 	for (var i = 0; i < N; i++) {
 		points[i] = {x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height)};
 	}
@@ -100,6 +105,9 @@ function generateTestPoints() {
 }
 
 function drawPoints() { 
+	svg.selectAll("circle")
+		.remove();
+
 	svg.selectAll("circle")
 	.data(points)
 	.enter()
@@ -553,6 +561,9 @@ function exponentialSA(startTemp, step, numSteps) {
 }
 
 function simulatedAnnealing(coolingFunction) {
+	if (N > 100) {
+		animate = false;
+	}
 	if (!path.length) {
 		path = generateRandomPath();
 		appendPath(path, true);
@@ -611,6 +622,10 @@ function simulatedAnnealing(coolingFunction) {
 	}
 	updateDistanceDisplay();
 	initializeGraph();
+
+	if (N > 100) {
+		animate = true;
+	}
 }
 
 function genetic() {
@@ -618,7 +633,7 @@ function genetic() {
 	var parentPaths = [];
 	var childrenPaths = [];
 	var popSize = 1000;
-	var generations = 1500;
+	var generations = 1000;
 	var mutationChance = 0.08;
 	var bestDistanceSoFar = Number.MAX_VALUE;
 	var bestPath = points;
@@ -645,7 +660,7 @@ function genetic() {
 			}
 		}
 		pathDistances.push(bestDistanceSoFar);
-		//console.log(bestDistanceSoFar);
+		console.log(bestDistanceSoFar);
 		parentPaths.length = 0;
 		parentPaths = childrenPaths;
 	}
@@ -792,52 +807,60 @@ function swapEdges(path, first, second) {
 	return path.slice(0, first + 1).concat(path.slice(first + 1, second + 1).reverse().concat(path.slice(second + 1)));
 }
 
+// wraps heuristic functions and uses setTimeout to show loading screen
+function heuristic(func, arg) {
+	$("#overlay").css("display", "block");
+	console.time("time");
+	setTimeout(function() {
+		if (arg == undefined) {
+			func();
+		} else {
+			func(arg);
+		}
+		$("#overlay").css("display", "none");
+		console.timeEnd("time");
+	}, 10);
+}
+
 generatePoints();
 drawPoints();
 generateDistanceMatrix();
 //drawIndices();
 
+$("#num-points").change(function() {
+	//console.log($(this).val());
+	N = $(this).val();
+	transitionDuration = 12000 / N;
+	//console.log(N);
+	generatePoints();
+	drawPoints();
+	generateDistanceMatrix();
+	clearLines(true);
+	console.log(N + " Points");
+	$("#slider-value").html(N + " Points");
+});
+
 $("#nearest-neighbor").on("click", function() {
-	console.time("nn");
-	nearestNeighbor();
-	console.timeEnd("nn");
+	heuristic(nearestNeighbor);
 });
 $("#nearest-insertion").on("click", function() {
-//	checkAnimation();
-	console.time("one");
-	nearestInsertion();
-	console.timeEnd("one");
-});
-$("#nearest-insertion-two").on("click", function() {
-	console.time("two");
-	nearFarInsertion(false);
-	console.timeEnd("two");
+	heuristic(nearFarInsertion, false);
 });
 $("#farthest-insertion").on("click", function() {
-	console.time("fi");
-	nearFarInsertion(true);
-	console.timeEnd("fi");
+	heuristic(nearFarInsertion, true);
 });
 $("#in-order").on("click", inOrder);
 $("#hill-climber").on("click", function() {
-	console.time("hc");
-	simulatedAnnealing(hillClimber);
-	console.timeEnd("hc");
+	heuristic(simulatedAnnealing, hillClimber);
 });
 $("#simulated-annealing").on("click", function() {
-	console.time("sa");
-	simulatedAnnealing(linearSA);
-	console.timeEnd("sa");
+	heuristic(simulatedAnnealing, linearSA);
 });
 $("#simulated-annealing-exp").on("click", function() {
-	console.time("sa-exp");
-	simulatedAnnealing(exponentialSA);
-	console.timeEnd("sa-exp");
+	heuristic(simulatedAnnealing, exponentialSA);
 });
 $("#genetic").on("click", function() {
-	console.time("g");
-	genetic();
-	console.timeEnd("g");
+	heuristic(genetic);
 });
 $("#2-opt").on("click", iterativeTwoOpt);
 // $("#2-points").on("click", twoPoints);

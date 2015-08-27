@@ -17,6 +17,17 @@
     	font-family: sans-serif;
     	font-size: 11px;
 	}
+
+	.overlay {
+		position: absolute;
+		display: none;
+		text-align: center;
+		line-height: 490px;
+		height: 490px;
+		width: 960px;
+		z-index: 1;
+		background-color: rgba(208, 208, 208, 0.5);
+	}
 	</style>
 </head>
 <body>
@@ -27,12 +38,20 @@
 	<button id="2-opt">2-opt</button>
 <!-- 	<button id="2-points">2-points</button> -->
 	<button id="nearest-insertion">Nearest Insertion</button>
-	<button id="nearest-insertion-two">Nearest Insertion Two</button>
 	<button id="farthest-insertion">Farthest Insertion</button>
 	<button id="nearest-neighbor">Nearest Neighbor</button>
 	<button id="in-order">In Order</button>
 	<button id="clear">Clear</button>
-	<div id="svg-container"></div>
+	<div>
+		<span id="slider-value"> 100 Points</span>
+		<input id="num-points" value=100 max=300 min=1 type="range"></input>
+		<span style="font-size:12">Note: Animation is more clear with smaller values (e.g. 1-50) </span>
+	</div>
+	<div id="svg-container">
+		<div class="overlay" id="overlay">
+      		<p><h1>Loading</h1></p>
+    	</div>
+    </div>
 	<input id="animate" type="checkbox" checked="checked">Animate</input>
 	<h2 id="distance">Distance: 0</h2>
 	<div id="graph-container"></div>

@@ -3,6 +3,8 @@ Travelling Salesman Solver
 
 A TSP Solver using D3.js that generates random points and implements various heuristics to find a solution. Heuristics include hill climber, simulated annealing, two-opt edge swap, nearest neighbor, nearest insertion, and farthest insertion. Also implements a genetic algorithm with tournament selection, order based crossover, and edge swap mutation. Utilizes d3 transition chaining to visualize edge insertion and swaps.
 
+![](/tsp.png)
+
 ##Status
 
 Heuristics so far:
@@ -14,6 +16,9 @@ Heuristics so far:
 - Hill Climber
 - Simulated Annealing
 - Genetic Algorithm
+
+Animation works for NN, insertions, and 2-opt edge swap.
+SA and HC also have animations but it currently looks buggy (due to performance issues of animating 5000+ steps). 
 
 To-do:
 
