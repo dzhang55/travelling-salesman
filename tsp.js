@@ -862,7 +862,9 @@ $("#simulated-annealing-exp").on("click", function() {
 $("#genetic").on("click", function() {
 	heuristic(genetic);
 });
-$("#2-opt").on("click", iterativeTwoOpt);
+$("#2-opt").on("click", function() {
+	heuristic(iterativeTwoOpt);
+});
 // $("#2-points").on("click", twoPoints);
 $("#clear").on("click", function() {
 	clearLines(true);
