@@ -561,8 +561,10 @@ function exponentialSA(startTemp, step, numSteps) {
 }
 
 function simulatedAnnealing(coolingFunction) {
-	if (N > 100) {
+	var changedAnimate = false;
+	if (N > 100 && animate) {
 		animate = false;
+		changedAnimate = true;
 	}
 	if (!path.length) {
 		path = generateRandomPath();
@@ -623,7 +625,7 @@ function simulatedAnnealing(coolingFunction) {
 	updateDistanceDisplay();
 	initializeGraph();
 
-	if (N > 100) {
+	if (changedAnimate) {
 		animate = true;
 	}
 }
