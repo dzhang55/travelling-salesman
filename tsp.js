@@ -838,7 +838,7 @@ $("#num-points").change(function() {
 	drawPoints();
 	generateDistanceMatrix();
 	clearLines(true);
-	path = [];
+	path.length = 0;
 	console.log(N + " Points");
 	$("#slider-value").html(N + " Points");
 });
