@@ -1,0 +1,106 @@
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Travelling Salesman</title>
+  <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+  <style>
+  div {
+    padding: 10px;
+  }
+
+  .hidden {
+    display: none;
+  }
+  
+  .axis path,
+  .axis line {
+      fill: none;
+      stroke: black;
+      shape-rendering: crispEdges;
+  }
+
+  .axis text {
+      font-family: sans-serif;
+      font-size: 11px;
+  }
+
+  .overlay {
+    position: absolute;
+    display: none;
+    text-align: center;
+    line-height: 490px;
+    height: 490px;
+    width: 960px;
+    z-index: 1;
+    background-color: rgba(208, 208, 208, 0.5);
+  }
+  </style>
+</head>
+<body>
+  <h1>Travelling Salesman</h1>
+  <div id="svg-container">
+    <div class="overlay" id="overlay">
+      <p><h1>Loading</h1></p>
+    </div>
+  </div>
+  <div id="error-message" class="alert alert-danger" style="display:none;width=500">
+    Please fill out all fields.
+  </div>
+  <div style="width:500">
+    <span id="slider-value">100 Points</span>
+    <input id="num-points" value=100 max=300 min=1 type="range"></input>
+  </div>
+  <form id="submit">
+    <div class="dropdown">
+      <input id="algorithm-input" style="display:none" name="algorithm" type="text">
+      <button class="btn btn-default btn-lg dropdown-toggle" type="button" id="algorithm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+        Algorithm
+        <span class="caret"></span>
+      </button>
+      <ul id="algorithmlist" class="dropdown-menu" aria-labelledby="dropdownMenu1">
+        <li class="dropdown-header">Deterministic heuristics</li>
+        <li><a href="#">In Order</a></li>
+        <li><a href="#">Nearest Neighbor</a></li>
+        <li><a href="#">Nearest Insertion</a></li>
+        <li><a href="#">Farthest Insertion</a></li>
+        <li role="separator" class="divider"></li>
+        <li class="dropdown-header">Randomized heuristics</li>
+        <li><a href="#">Iterative Two Opt</a></li>
+        <li><a href="#">Hill Climber</a></li>
+        <li><a href="#">Simulated Annealing</a></li>
+        <li><a href="#">Genetic Algorithm</a></li>
+      </ul>
+    </div>
+    <div id="options">
+      <div class="input-group hidden" id="iterations">
+        <span class="input-group-addon" id="iteration-label">Iterations</span>
+        <input type="number" step="1" name="iterations" class="form-control" placeholder="Please enter a positive integer" aria-describedby="iteration-label">
+      </div>
+      <div class="input-group hidden" id="population">
+        <span class="input-group-addon" id="population-label">Population Size</span>
+        <input type="number" step="1" name="population" class="form-control" placeholder="Please enter a positive integer" aria-describedby="population-label">
+      </div>
+      <div id="cooling-function" class="btn-group hidden" role="group" aria-label="..." data-toggle="buttons">
+        <h4>Cooling Function</h4>
+        <label class="btn btn-default active">
+          <input type="radio" name="linear" autocomplete="off" checked>Linear
+        </label>
+        <label class="btn btn-default">
+          <input type="radio" name="exponential" autocomplete="off">Exponential
+        </label>
+      </div>
+      <div id="submission" class="hidden">
+        <input name="animate" type="checkbox" checked="checked">Animate</input>
+        <button type="submit" class="btn btn-default">Solve</button>
+      </div>
+    </div>
+  </form>
+  <h2 id="distance">Distance: 0</h2>
+  <div id="graph-container"></div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="/js/buttons.js"></script>
+  <script src="/js/client.js"></script>
+  <script src="/js/bootstrap.min.js"></script>
+  <!--<script src="tsp.js" charset="utf-8"></script> !-->
+
+</body>

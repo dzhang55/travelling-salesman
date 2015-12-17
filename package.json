@@ -1,0 +1,14 @@
+{
+  "name": "TSPSolver",
+  "version": "1.0.0",
+  "description": "CIS197 Final Project",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "Daniel Zhang",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.3",
+  }
+}
