@@ -5,6 +5,12 @@ A TSP Solver using D3.js that generates random points and implements various heu
 
 ![](/tsp.png)
 
+##Demo
+
+![](/gifs/tsp_iterative_two_opt.gif)
+
+![](/gifs/tsp_simulated_annealing.gif)
+
 ##Status
 
 Heuristics so far:
